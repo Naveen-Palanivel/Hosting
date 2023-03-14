@@ -1,0 +1,197 @@
+﻿@page "/"
+
+@using System.Dynamic
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.SplitButtons
+@using Syncfusion.Blazor.Navigations
+
+<SfGrid TValue="ExpandoObject" DataSource=@GridData
+        AllowExcelExport="true"
+        AllowSelection="true"
+        AllowPaging="false"
+        ShowColumnChooser="true"
+        ShowColumnMenu="false"
+        AllowGrouping="true"
+        AllowFiltering="true"
+        AllowReordering="true"
+        AllowResizing="true"
+        AllowSorting="true"
+        AllowTextWrap="true"
+        GridLines="Syncfusion.Blazor.Grids.GridLine.Both"
+        Toolbar="@(new List<object>() {
+                   #pragma warning disable BL0005
+                   new ToolbarItem()
+                        {   TooltipText = "Actions",
+                            Id = "job_create_actions",
+                            Template = CreateJobDropDownMenu
+                        },
+            "Delete",
+            "ExcelExport",
+            "Search",
+            "ColumnChooser"
+                    #pragma warning restore BL0005
+                   })"
+        Width="auto"
+        @ref="@Grid"
+        Height="500"
+        EnableVirtualization="true"
+        EnableColumnVirtualization="true"
+        EnableVirtualMaskRow="false"
+        EnableStickyHeader="true"
+        EnablePersistence="false"
+        RowHeight="30">
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+    <GridColumns>
+        @if (GridData != null && GridData.Any())
+        {
+            foreach (var item in (IDictionary<string, object>)GridData.First())
+            {
+                <GridColumn Field="@item.Key"></GridColumn>
+            }
+        }
+    </GridColumns>
+    <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+    <GridPageSettings PageSizes="@(new string[] { "10", "20", "50", "100", "All" })" PageSize="20"></GridPageSettings>
+    <GridSelectionSettings EnableSimpleMultiRowSelection="true" Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+    <GridEvents OnRecordDoubleClick="RecordDoubleClickHandler"
+                OnToolbarClick="ToolClick"
+                OnActionComplete="OnGridActionComplete"
+                OnActionBegin="OnGridActionBegin"
+                ExportComplete="ExportCompleteHandler"
+                Created="OnGridCreated"
+                Destroyed="OnGridDestroyed"
+                TValue="ExpandoObject">
+    </GridEvents>
+    
+</SfGrid>
+
+@code {
+    private List<ExpandoObject> GridData = GenerateNewData();
+
+    SfGrid<ExpandoObject> Grid;
+
+    private static List<ExpandoObject> GenerateNewData()
+    {
+        var data = new List<ExpandoObject>();
+        var random = new Random();
+        var ColCount = random.Next(2, 41);
+        var ColNames = new string[ColCount];
+
+        // Generate random number of columns.
+        for (var col = 0; col < ColCount; col++)
+        {
+            ColNames[col] = "Col" + random.Next(0, 5000);
+        }
+
+        // Generate 25 rows based on the generated columns name.
+        for (var row = 0; row < 20000; row++)
+        {
+            dynamic item = new ExpandoObject();
+            var dict = (IDictionary<string, object>)item;
+            for (var col = 0; col < ColCount; col++)
+            {
+                dict[ColNames[col]] = random.Next(0, 10000);
+            }
+            data.Add(item);
+        }
+        return data;
+    }
+
+    public async System.Threading.Tasks.Task OnGridDestroyed()
+    {
+        
+    }
+
+    public async void ExportCompleteHandler(object args)
+    {
+        await Grid.HideSpinnerAsync();
+    }
+    private async System.Threading.Tasks.Task OnGridCreated()
+    {
+        
+    }
+
+    public async void RecordDoubleClickHandler(RecordDoubleClickEventArgs<ExpandoObject> args)
+    {
+        args.PreventRender = true;
+        try
+        {
+           
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+
+    }
+    private async System.Threading.Tasks.Task OnGridActionBegin(ActionEventArgs<ExpandoObject> args)
+    {
+        switch (args.RequestType)
+        {
+            case Syncfusion.Blazor.Grids.Action.FilterBeforeOpen:
+            break;
+                
+        }
+
+    }
+
+    private async System.Threading.Tasks.Task OnGridActionComplete(ActionEventArgs<ExpandoObject> args)
+    {
+        switch (args.RequestType)
+        {
+            case Syncfusion.Blazor.Grids.Action.Filtering:
+            case Syncfusion.Blazor.Grids.Action.Paging:
+               
+                break;
+        }
+        
+    }
+
+    public async void ToolClick(Syncfusion.Blazor.Navigations.ClickEventArgs Args)
+    {
+        
+        if (Args.Item.Text == "Excel Export")
+        {
+            ExcelExportProperties excelExportProperties = new ExcelExportProperties();
+            await Grid.ShowSpinnerAsync();
+
+            var selectedRecords = await Grid.GetSelectedRecordsAsync();
+
+          
+            if (selectedRecords.Count() > 0)
+            {
+               
+                excelExportProperties.DataSource = selectedRecords;
+                await Grid.ExportToExcelAsync(excelExportProperties);
+            }
+            else
+            {
+              
+                await Grid.ExportToExcelAsync();
+            }
+        }
+    }
+
+
+
+    SfDropDownButton MainMenuButton;
+    SfContextMenu<MenuItem> MainMenu;
+    public RenderFragment CreateJobDropDownMenu =>
+    @<SfDropDownButton Content="Actions" CssClass="action-button" @ref="MainMenuButton">   
+        <PopupContent>
+                    <SfContextMenu @ref="MainMenu" TValue="MenuItem" ShowItemOnClick="false">
+                    <MenuEvents TValue="MenuItem" OnClose="@((args)=> { if (args.ParentItem == null) MainMenuButton.Toggle(); })" Created="@(() => { MainMenu.Open(); })" ></MenuEvents>
+                      <MenuItems> 
+                        <MenuItem Text="Create New Job" Id="create_new_job">
+                             
+                        </MenuItem>
+                      <MenuItem Text="Create Job From Template" Id="create_job_from_template">  </MenuItem>
+                      <MenuItem Text="Apply Template to Jobs" Id="apply_template_to_jobs">  </MenuItem>
+                     </MenuItems>
+                     </SfContextMenu> 
+                    </PopupContent>        
+    </SfDropDownButton>;
+
+}
